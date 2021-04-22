@@ -1,0 +1,38 @@
+class mkttocash(QCAlgorithm):
+    def Initialize(self):
+        self.SetCash(100000)
+        self.SetStartDate(2019, 1, 1)
+        self.SetEndDate(2019, 8, 1)
+        
+        
+        #IHI and IGV are etfs that can be changed. Rotates between them by which one has a better moving average. 
+
+
+        self.ihi = self.AddEquity("IHI", Resolution.Daily)
+        self.igv = self.AddEquity("IGV", Resolution.Daily)
+
+        self.ihim = self.MOMP("IHI", 18, Resolution.Daily)
+        self.igvm = self.MOMP("IGV", 18, Resolution.Daily)
+
+        self.Securities["IHI"].FeeModel = ConstantFeeModel(1)
+        self.Securities["IGV"].FeeModel = ConstantFeeModel(1)
+
+        self.SetWarmup(18)
+        self.SetBenchmark("SPY")
+
+    def OnData(self, data): 
+
+        if self.IsWarmingUp:
+            return
+
+        if self.ihim.Current.Value > 0 or self.igvm.Current.Value > 0:
+
+            if self.ihim.Current.Value > self.igvm.Current.Value: 
+                self.SetHoldings("IHI", 1)
+
+            elif self.ihim.Current.Value < self.igvm.Current.Value: 
+                self.SetHoldings("IGV", 1)
+
+        elif self.ihim.Current.Value < 0  and self.igvm.Current.Value < 0:
+            self.Liquidate("IHI")
+            self.Liquidate("IGV")
